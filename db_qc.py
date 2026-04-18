@@ -2,6 +2,13 @@
 
 import sys
 import sqlite3
+import logging
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        level=logging.INFO
+    )
 
 # Exit codes
 EXIT_OK = 0
@@ -38,12 +45,13 @@ def table_has_empty_cells_strict(cursor, table_name):
 
 def main():
     if len(sys.argv) != 2:
-        print("Usage: check_empty_cells.py <database_file>")
+        logger.info("Usage: check_empty_cells.py <database_file>")
         sys.exit(EXIT_RUNTIME_ERROR)
 
     db_path = sys.argv[1]
 
     try:
+        logger.info(f"Running checks on {db_path}")
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
 
@@ -60,19 +68,19 @@ def main():
                 if table_has_empty_cells_strict(cursor, table):
                     tables_with_issues.append(table)
             except Exception as e:
-                print(f"Error checking table '{table}': {e}", file=sys.stderr)
+                logger.error(f"Error checking table '{table}': {e}", file=sys.stderr)
                 sys.exit(EXIT_RUNTIME_ERROR)
 
         if tables_with_issues:
-            print("Empty cells found in the following tables:")
+            logger.warning("Empty cells found in the following tables:")
             for t in tables_with_issues:
-                print(f" - {t}")
+                logger.warning(f" - {t}")
             sys.exit(EXIT_EMPTY_CELLS_FOUND)
-
+        logger.info(f"All checks passed.")
         sys.exit(EXIT_OK)
 
     except Exception as e:
-        print(f"Error: {e}", file=sys.stderr)
+        logger.error(f"Error: {e}", file=sys.stderr)
         sys.exit(EXIT_RUNTIME_ERROR)
 
     finally:
